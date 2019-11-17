@@ -60,7 +60,7 @@ fn main() {
                                 current_word.push(byte);
                             }
                         }
-                        b'`' => {
+                        b'\\' => {
                             escaping = true;
                         }
                         _ => {
