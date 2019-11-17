@@ -1,5 +1,4 @@
 use std::{
-    env::args_os,
     ffi::OsStr,
     io::{stdin, stdout, Read, StdoutLock, Write},
     mem::replace,
@@ -93,12 +92,10 @@ fn main() {
     state.stdout.write(b"[do]").unwrap();
     state.stdout.flush().unwrap();
 
-    for arg in args_os().skip(1) {
-        for byte in arg.as_bytes() {
-            state.stdout.write(&[*byte]).unwrap();
-            state.stdout.flush().unwrap();
-            handle_byte(&mut state, *byte)
-        }
+    for byte in b"[sway]\n" {
+        state.stdout.write(&[*byte]).unwrap();
+        state.stdout.flush().unwrap();
+        handle_byte(&mut state, *byte)
     }
 
     let mut buf: [u8; 1] = Default::default();
