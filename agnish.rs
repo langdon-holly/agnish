@@ -6,7 +6,10 @@ use std::{
 };
 
 fn main() {
-    let mut the_stdout = stdout();
+    let the_unlocked_stdin = stdin();
+    let mut the_stdin = the_unlocked_stdin.lock();
+    let the_unlocked_stdout = stdout();
+    let mut the_stdout = the_unlocked_stdout.lock();
     'OUTER: loop {
         the_stdout.write(b"[run]").unwrap();
         the_stdout.flush().unwrap();
@@ -18,7 +21,7 @@ fn main() {
         let mut bad = false;
         loop {
             let mut buf: [u8; 1] = Default::default();
-            if stdin().lock().read(&mut buf).unwrap() == 0 {
+            if the_stdin.read(&mut buf).unwrap() == 0 {
                 break 'OUTER;
             }
             let byte = buf[0];
