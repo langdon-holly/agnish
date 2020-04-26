@@ -1,77 +1,20 @@
 use std::{
     ffi::OsStr,
     io::{stdin, stdout, Read, StdoutLock, Write},
-    mem::replace,
     os::unix::ffi::OsStrExt,
     process::Command,
 };
 
-struct ParsingState<'a> {
-    words: Vec<Box<[u8]>>,
-    current_word: Vec<u8>,
-    nesting_level: usize,
-    escaping: bool,
-    bad: bool,
-    stdout: StdoutLock<'a>,
-}
+const PS: &[u8] = b"agnish> ";
 
-fn handle_byte(state: &mut ParsingState, byte: u8) {
-    if state.bad {
-        if byte == b'\n' {
-            state.bad = false;
-            state.stdout.write(b"bad syntax\n[do]").unwrap();
-            state.stdout.flush().unwrap();
-        }
+fn handle_byte(command_state: &mut Vec<u8>, byte: u8, the_stdout: &mut StdoutLock) {
+    if byte == b'\n' {
+        let _ = Command::new(OsStr::from_bytes(command_state)).status();
+        *command_state = Vec::new();
+        let _ = the_stdout.write(PS);
+        let _ = the_stdout.flush();
     } else {
-        if state.nesting_level == 0 {
-            match byte {
-                b'[' => state.nesting_level = 1,
-                b'\n' => {
-                    if state.words.len() == 0 {
-                        if byte == b'\n' {
-                            state.stdout.write(b"bad syntax\n[do]").unwrap();
-                            state.stdout.flush().unwrap();
-                        }
-                    } else {
-                        let mut command = Command::new(OsStr::from_bytes(&*state.words[0]));
-                        for i in 1..state.words.len() {
-                            command.arg(OsStr::from_bytes(&*state.words[i]));
-                        }
-                        if let Err(_) = command.status() {
-                            state.stdout.write(b"unsuccessful\n").unwrap();
-                        }
-                        state.words = Vec::new();
-                        state.stdout.write(b"[do]").unwrap();
-                        state.stdout.flush().unwrap();
-                    }
-                }
-                _ => state.bad = true,
-            }
-        } else {
-            if state.escaping {
-                state.escaping = false;
-                state.current_word.push(byte);
-            } else {
-                match byte {
-                    b'[' => {
-                        state.nesting_level += 1;
-                        state.current_word.push(byte);
-                    }
-                    b']' => {
-                        state.nesting_level -= 1;
-                        if state.nesting_level == 0 {
-                            state.words.push(
-                                replace(&mut state.current_word, Vec::new()).into_boxed_slice(),
-                            );
-                        } else {
-                            state.current_word.push(byte);
-                        }
-                    }
-                    b'\\' => state.escaping = true,
-                    _ => state.current_word.push(byte),
-                }
-            }
-        }
+        command_state.push(byte)
     }
 }
 
@@ -79,27 +22,20 @@ fn main() {
     let the_unlocked_stdin = stdin();
     let mut the_stdin = the_unlocked_stdin.lock();
     let the_unlocked_stdout = stdout();
+    let mut the_stdout = the_unlocked_stdout.lock();
 
-    let mut state = ParsingState {
-        words: Vec::new(),
-        current_word: Vec::new(),
-        nesting_level: 0,
-        escaping: false,
-        bad: false,
-        stdout: the_unlocked_stdout.lock(),
-    };
+    let mut command_state = Vec::new();
+    let _ = the_stdout.write(PS);
+    let _ = the_stdout.flush();
 
-    state.stdout.write(b"[do]").unwrap();
-    state.stdout.flush().unwrap();
-
-    for byte in b"[sway]\n" {
-        state.stdout.write(&[*byte]).unwrap();
-        state.stdout.flush().unwrap();
-        handle_byte(&mut state, *byte)
+    for byte in b"sway\n" {
+        let _ = the_stdout.write(&[*byte]);
+        let _ = the_stdout.flush();
+        handle_byte(&mut command_state, *byte, &mut the_stdout)
     }
 
     let mut buf: [u8; 1] = Default::default();
     while the_stdin.read(&mut buf).unwrap() > 0 {
-        handle_byte(&mut state, buf[0])
+        handle_byte(&mut command_state, buf[0], &mut the_stdout)
     }
 }
