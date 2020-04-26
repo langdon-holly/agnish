@@ -1,6 +1,6 @@
 use std::{
     ffi::OsStr,
-    io::{stdin, stdout, Read, StdoutLock, Write},
+    io::{stdin, stdout, ErrorKind::Interrupted, Read, StdoutLock, Write},
     os::unix::ffi::OsStrExt,
     process::Command,
 };
@@ -35,7 +35,21 @@ fn main() {
     }
 
     let mut buf: [u8; 1] = Default::default();
-    while the_stdin.read(&mut buf).unwrap() > 0 {
+    loop {
+        match the_stdin.read(&mut buf) {
+            Ok(n) => {
+                if n == 0 {
+                    break;
+                }
+            }
+            Err(err) => {
+                if err.kind() == Interrupted {
+                    continue;
+                } else {
+                    panic!()
+                }
+            }
+        }
         handle_byte(&mut command_state, buf[0], &mut the_stdout)
     }
 }
