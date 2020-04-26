@@ -20,18 +20,14 @@ fn main() {
         let _ = Command::new(OsStr::from_bytes(*command)).status();
     }
 
+    let mut buf: [u8; 1] = Default::default();
     let mut command_state = Vec::new();
     let _ = the_stdout.write(PS);
     let _ = the_stdout.flush();
-
-    let mut buf: [u8; 1] = Default::default();
     loop {
         match the_stdin.read(&mut buf) {
-            Ok(n) => {
-                if n == 0 {
-                    break;
-                }
-
+            Ok(0) => break,
+            Ok(_) => {
                 if buf[0] == b'\n' {
                     let _ = Command::new(OsStr::from_bytes(&command_state)).status();
                     command_state = Vec::new();
