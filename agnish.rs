@@ -6,6 +6,7 @@ use std::{
 };
 
 const PS: &[u8] = b"agnish> ";
+const INIT_COMMAND: &[u8] = b"sway";
 
 fn main() {
     let the_unlocked_stdin = stdin();
@@ -13,12 +14,11 @@ fn main() {
     let the_unlocked_stdout = stdout();
     let mut the_stdout = the_unlocked_stdout.lock();
 
-    for command in &[b"sway"] {
-        let _ = the_stdout.write(PS);
-        let _ = the_stdout.write(*command);
-        let _ = the_stdout.flush();
-        let _ = Command::new(OsStr::from_bytes(*command)).status();
-    }
+    let _ = the_stdout.write(PS);
+    let _ = the_stdout.write(INIT_COMMAND);
+    let _ = the_stdout.write(b"\n");
+    let _ = the_stdout.flush();
+    let _ = Command::new(OsStr::from_bytes(INIT_COMMAND)).status();
 
     let mut buf: [u8; 1] = Default::default();
     let mut command_state = Vec::new();
