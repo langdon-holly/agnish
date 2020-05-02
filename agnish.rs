@@ -1,3 +1,10 @@
+// agnish (the Ain't Gonna Need It SHell) is:
+// * my login shell on Arch Linux
+// * simple, so I'm fine with it running all the time
+// * for starting fancier shells
+//
+// Ignoring unsuccessful writes to standard output is simple and okay.
+
 use std::{
     ffi::OsStr,
     io::{stdin, stdout, ErrorKind::Interrupted, Read, Write},
