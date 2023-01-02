@@ -16,10 +16,8 @@ const PS: &[u8] = b"agnish> ";
 const INIT_COMMAND: &[u8] = b"sway";
 
 fn main() {
-    let the_unlocked_stdin = stdin();
-    let mut the_stdin = the_unlocked_stdin.lock();
-    let the_unlocked_stdout = stdout();
-    let mut the_stdout = the_unlocked_stdout.lock();
+    let mut the_stdin = stdin().lock();
+    let mut the_stdout = stdout().lock();
 
     let _ = the_stdout.write(PS);
     let _ = the_stdout.write(INIT_COMMAND);
