@@ -33,22 +33,20 @@ fn main() {
     let _ = the_stdout.flush();
     loop {
         match the_stdin.read(&mut buf) {
-            Ok(0) => break,
-            Ok(_) => {
-                if buf[0] == b'\n' {
+            Ok(n) => match (n == 0, buf[0] == b'\n') {
+                (true, _) => break,
+                (false, true) => {
                     let _ = Command::new(OsStr::from_bytes(&command_state)).status();
                     command_state = Vec::new();
                     let _ = the_stdout.write(PS);
                     let _ = the_stdout.flush();
-                } else {
-                    command_state.push(buf[0])
                 }
-            }
-            Err(err) => {
-                if err.kind() != Interrupted {
-                    panic!()
-                }
-            }
+                (false, false) => command_state.push(buf[0]),
+            },
+            Err(err) => match err.kind() == Interrupted {
+                true => {}
+                false => panic!(),
+            },
         }
     }
 }
